@@ -1,4 +1,4 @@
-*.swap
+*.swp
 *.log
 *.tmp
 lib_managed/
