@@ -20,10 +20,10 @@ libraryDependencies ++= Seq(
   "org.apache.zookeeper" % "zookeeper"	% "3.3.5-cdh3u5",		// CDH3u5
   "com.google.guava"	% "guava" % "r06",				// CDH3u5
   "log4j"               % "log4j" % "1.2.17",				// CDH3u5
-  "org.twitter4j"	% "twitter4j-core" % "2.2.5"		% "test",	// 関連文書検索テスト用
-  "org.twitter4j"	% "twitter4j-stream" % "2.2.5"	% "test"	// 関連文書検索テスト用
+  "org.twitter4j"	% "twitter4j-core" % "2.2.5",	// 
+  "org.twitter4j"	% "twitter4j-stream" % "2.2.5"	// 
 )
 
-retrieveManaged := true
+// retrieveManaged := true
 
 
