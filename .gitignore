@@ -1,4 +1,7 @@
-*.swp
+*.swap
+*.log
+*.tmp
 lib_managed/
 project/
 target/
+
