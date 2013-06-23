@@ -1,4 +1,7 @@
-Twitter Sample Stream を使用して Twitter のつぶやきを収集するためのプロジェクト。
+Twitter Sample Stream で Twitter のつぶやきを収集するリポジトリ
+
+** Usage
+`sbt run`
 
 ** LICENSE
 Apache License 2.0

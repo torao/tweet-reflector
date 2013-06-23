@@ -1,6 +1,7 @@
 *.swp
 *.log
 *.tmp
+*.csv
 lib_managed/
 project/
 target/

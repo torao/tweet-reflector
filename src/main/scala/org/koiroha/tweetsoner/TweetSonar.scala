@@ -1,11 +1,29 @@
 /*
 */
+import java.io._
 import twitter4j._
 import twitter4j.conf._
 
+/**
+ * 
+*/
 object TwitterSonar extends StatusAdapter {
 
-	def main(args:Array[String]){
+	var filter:(Status)=>Boolean = { _ => false }
+
+	def main(args:Array[String]) = {
+	
+		lazy val parse:(List[String])=>Unit = _ match {
+			case "--japanese-only" :: rest =>
+				filter = { status => ! isJapanese(status.getText) }
+				parse(rest)
+			case unknown :: rest =>
+				System.err.println("Unknown parameter: %s".format(unknown))
+				System.exit(1)
+			case List() => None
+		}
+		parse(args.toList)
+
 		val conf = new ConfigurationBuilder().setDebugEnabled(true)
 			.setOAuthConsumerKey("MZgfBkxZwjYapeyzWVwkdw")
 			.setOAuthConsumerSecret("DzX1BZfd0tMkYV2lMJfoefWUkPLLb2uKxBISHROuA")
@@ -17,34 +35,44 @@ object TwitterSonar extends StatusAdapter {
 	}
 
 	override def onStatus(status:Status):Unit = {
-		val text = status.getText
-		if(isJapanese(text)){
+		if(! filter(status)){
 			save(status)
 		}
 	}
 
-	private[this] val df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-	private[this] def save(status:Status):Unit = try {
+	private[this] val df = new java.text.SimpleDateFormat("yyyy-MM-dd")
+	private[this] val tf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+	private[this] def save(status:Status):Unit = open(status.getCreatedAt) { out =>
 		val user = status.getUser
-		System.out.print(user.getId + ",")
-		System.out.print(csv(user.getScreenName) + ",")
-		System.out.print(csv(user.getName) + ",")
-		System.out.print(csv(user.getLocation) + ",")
-		System.out.print(csv(user.getTimeZone) + ",")
-		System.out.print(csv(user.getLang) + ",")
-		System.out.print(status.getId + ",")
-		System.out.print(df.format(status.getCreatedAt) + ",")
-		System.out.print(csv(status.getGeoLocation) + ",")
-		System.out.print(csv(status.getPlace) + ",")
-		System.out.print(csv(status.getInReplyToStatusId) + ",")
-		System.out.print(csv(status.getInReplyToUserId) + ",")
-		System.out.print(csv(status.getInReplyToScreenName) + ",")
-		System.out.print(csv(status.isRetweet) + ",")
-		System.out.print(csv(status.getText))
-		System.out.println()
-		System.out.flush()
-	} catch {
-		case ex => ex.printStackTrace()
+		out.print(user.getId + ",")
+		out.print(csv(user.getScreenName) + ",")
+		out.print(csv(user.getName) + ",")
+		out.print(csv(user.getLocation) + ",")
+		out.print(csv(user.getTimeZone) + ",")
+		out.print(csv(user.getLang) + ",")
+		out.print(status.getId + ",")
+		out.print(tf.format(status.getCreatedAt) + ",")
+		out.print(csv(status.getGeoLocation) + ",")
+		out.print(csv(status.getPlace) + ",")
+		out.print(csv(status.getInReplyToStatusId) + ",")
+		out.print(csv(status.getInReplyToUserId) + ",")
+		out.print(csv(status.getInReplyToScreenName) + ",")
+		out.print(csv(status.isRetweet) + ",")
+		out.print(csv(status.getText))
+		out.println()
+		out.flush()
+	}
+
+	private[this] def open(date:java.util.Date)(f:(PrintWriter)=>Unit) = {
+		val fileName = df.format(date) + ".csv"
+		val out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName, true), "UTF-8"))
+		try {
+			f(out)
+		} catch {
+			case ex => ex.printStackTrace()
+		} finally {
+			out.close()
+		}
 	}
 
 	private[this] def csv(text:String):String = {
