@@ -23,8 +23,8 @@ libraryDependencies ++= Seq(
   "log4j"               % "log4j" % "1.2.17",				// CDH3u5
   "org.atilika.kuromoji" % "kuromoji" % "0.7.7",			// Kuromoji
   "org.twitter4j"	% "twitter4j-core" % "2.2.5",	// 
-  "org.twitter4j"	% "twitter4j-stream" % "2.2.5",	// 
-  "com.basho.riak" % "riak-client" % "1.1.0"	// Riak
+  "org.twitter4j"	% "twitter4j-stream" % "2.2.5",	//
+  "com.basho.riak"      % "riak-client" % "1.1.0"	// Riak 
 )
 
 // retrieveManaged := true
