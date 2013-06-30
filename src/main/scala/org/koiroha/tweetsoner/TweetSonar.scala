@@ -9,6 +9,7 @@ import twitter4j.conf._
 */
 object TwitterSonar extends StatusAdapter {
 
+	var console = false
 	var filter:(Status)=>Boolean = { _ => false }
 
 	def main(args:Array[String]) = {
@@ -16,6 +17,9 @@ object TwitterSonar extends StatusAdapter {
 		lazy val parse:(List[String])=>Unit = _ match {
 			case "--japanese-only" :: rest =>
 				filter = { status => ! isJapanese(status.getText) }
+				parse(rest)
+			case "--console" :: rest =>
+				console = true
 				parse(rest)
 			case unknown :: rest =>
 				System.err.println("Unknown parameter: %s".format(unknown))
@@ -64,14 +68,21 @@ object TwitterSonar extends StatusAdapter {
 	}
 
 	private[this] def open(date:java.util.Date)(f:(PrintWriter)=>Unit) = {
-		val fileName = df.format(date) + ".csv"
-		val out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName, true), "UTF-8"))
+		val out = if(console){
+			new PrintWriter(System.out)
+		} else {
+			val fileName = df.format(date) + ".csv"
+			new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName, true), "UTF-8"))
+		}
 		try {
 			f(out)
+			out.flush()
 		} catch {
 			case ex => ex.printStackTrace()
 		} finally {
-			out.close()
+			if(! console){
+				out.close()
+			}
 		}
 	}
 
