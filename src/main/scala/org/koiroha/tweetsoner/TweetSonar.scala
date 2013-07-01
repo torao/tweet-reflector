@@ -123,10 +123,13 @@ object TwitterSonar extends RawStreamListener {
 		val out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName, true), "UTF-8"))
 		try {
 			f(out)
+			out.flush()
 		} catch {
 			case ex => ex.printStackTrace()
 		} finally {
-			out.close()
+			if(! console){
+				out.close()
+			}
 		}
 	}
 
