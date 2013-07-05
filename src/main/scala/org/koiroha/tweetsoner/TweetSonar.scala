@@ -5,6 +5,8 @@ import twitter4j._
 import twitter4j.conf._
 import twitter4j.json._
 import com.basho.riak.client._
+import com.basho.riak.client.raw._
+import com.basho.riak.pbc.RiakClient
 
 /**
  * 
@@ -60,11 +62,17 @@ object TwitterSonar extends RawStreamListener {
 		stream.sample()
 	}
 
-	def onMessage(rawString:String):Unit = {
+	def onMessage(rawString:String):Unit = try {
 		val status = DataObjectFactory.createStatus(rawString)
 		if(! filter(status)){
 			output(status, format(status, rawString))
 		}
+	} catch {
+		case ex:TwitterException =>
+			if(! rawString.startsWith("{\"delete\":")){
+				System.err.println(ex + ": " + rawString)
+			}
+		case ex:Exception => ex.printStackTrace()
 	}
 
 	def onException(ex:Exception):Unit = {
@@ -80,14 +88,27 @@ object TwitterSonar extends RawStreamListener {
 		System.out.println(text)
 	}
 
-	private[this] lazy val client = RiakFactory.httpClient()
+	private[this] lazy val client = new pbc.PBClientAdapter(new RiakClient("192.168.61.0", 8087))
+	/*
+	private[this] lazy val client = {
+		val maxConnections = 50
+		val config = new PBClusterConfig(maxConnections)
+		val c = config.defaults()
+		config.addHosts(c, "192.168.61.0", "192.168.61.1", "192.168.61.2", "192.168.61.3")
+		RiakFactory.newClient(config)
+	}
+	*/
 	private[this] val rdf = new java.text.SimpleDateFormat("yyyyMMdd")
 	private[this] val rtf = new java.text.SimpleDateFormat("HHmm")
 	private[this] def riakOutput(status:Status, text:String):Unit = {
-		val bucket = client.fetchBucket("TwitterSampleStream").execute()
-		bucket.store(String.valueOf(status.getId()), text).execute()
+		val key = String.valueOf(status.getId())
+		val riakObject = builders.RiakObjectBuilder.newBuilder("TwitterSampleStream", key)
+			.withValue(text.getBytes("UTF-8"))
+			.withContentType("text/json")
+			.build()
 			.addIndex("date", rdf.format(status.getCreatedAt()))
 			.addIndex("time", rdf.format(status.getCreatedAt()))
+		client.store(riakObject, new StoreMeta(1, 1, 0, false, false, false, false))
 	}
 
 	private[this] val df = new java.text.SimpleDateFormat("yyyy-MM-dd")
@@ -127,9 +148,7 @@ object TwitterSonar extends RawStreamListener {
 		} catch {
 			case ex => ex.printStackTrace()
 		} finally {
-			if(! console){
-				out.close()
-			}
+			out.close()
 		}
 	}
 
