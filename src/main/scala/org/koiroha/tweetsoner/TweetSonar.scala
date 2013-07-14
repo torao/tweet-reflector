@@ -17,6 +17,10 @@ object TwitterSonar extends RawStreamListener {
 	var output:(Status,String)=>Unit = consoleOutput
 	var filter:(Status)=>Boolean = { _ => false }
 
+	val watcher = new Thread(new Runnable(){ def run = shukei })
+	watcher.setDaemon(true)
+	watcher.start	
+
 	def main(args:Array[String]) = {
 	
 		lazy val parse:(List[String])=>Unit = _ match {
@@ -47,9 +51,6 @@ object TwitterSonar extends RawStreamListener {
 		}
 		parse(args.toList)
 
-		if(! new File("twitter4j.properties").exists()){
-			System.err.println("INFO: twitter4j.properties not exists")
-		}
 		val conf = new ConfigurationBuilder()
 			.setDebugEnabled(true)
 			.setOAuthConsumerKey("MZgfBkxZwjYapeyzWVwkdw")
@@ -66,6 +67,7 @@ object TwitterSonar extends RawStreamListener {
 		val status = DataObjectFactory.createStatus(rawString)
 		if(! filter(status)){
 			output(status, format(status, rawString))
+			outputCount += 1
 		}
 	} catch {
 		case ex:TwitterException =>
@@ -77,6 +79,9 @@ object TwitterSonar extends RawStreamListener {
 
 	def onException(ex:Exception):Unit = {
 		ex.printStackTrace()
+		if(ex.isInstanceOf[OutOfMemoryError]){
+			System.exit(1)
+		}
 	}
 
 	private[this] def fileOutput(status:Status, text:String):Unit = open(status) { out =>
@@ -101,14 +106,22 @@ object TwitterSonar extends RawStreamListener {
 	private[this] val rdf = new java.text.SimpleDateFormat("yyyyMMdd")
 	private[this] val rtf = new java.text.SimpleDateFormat("HHmm")
 	private[this] def riakOutput(status:Status, text:String):Unit = {
+		val bucket = "TwitterSampleStream"
 		val key = String.valueOf(status.getId())
-		val riakObject = builders.RiakObjectBuilder.newBuilder("TwitterSampleStream", key)
+		val riakObject = builders.RiakObjectBuilder.newBuilder(bucket, key)
 			.withValue(text.getBytes("UTF-8"))
 			.withContentType("text/json")
 			.build()
 			.addIndex("date", rdf.format(status.getCreatedAt()))
 			.addIndex("time", rdf.format(status.getCreatedAt()))
-		client.store(riakObject, new StoreMeta(1, 1, 0, false, false, false, false))
+		client.store(riakObject)
+
+		val res = client.fetch(bucket, key)
+		if(! res.hasValue()){
+			System.err.println("fetch failed")
+		} else if(! text.equals(new String(res.getRiakObjects()(0).getValue(), "UTF-8"))){
+			System.err.println("illegal contents")
+		}
 	}
 
 	private[this] val df = new java.text.SimpleDateFormat("yyyy-MM-dd")
@@ -176,6 +189,21 @@ object TwitterSonar extends RawStreamListener {
 	private[this] def csv(p:Place):String = if(p != null){
 		csv(p.getFullName)
 	} else ""
+
+	var outputCount = 0
+	val shukeiInterval = 60 * 1000
+	private[this] def shukei():Unit = try {
+		System.err.println("start")
+		while(true){
+			outputCount = 0
+			Thread.sleep(shukeiInterval)
+			System.out.println("%s: %.3f[tweet/sec] write".format(tf.format(new java.util.Date()), outputCount.toDouble / shukeiInterval * 1000))
+		}
+	} catch {
+		case ex:InterruptedException => None
+	} finally {
+		System.err.println("exit")
+	}
 
 	private[this] def isJapanese(text:String):Boolean = {
 		text.foreach{ ch =>
