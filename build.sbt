@@ -1,4 +1,4 @@
-name := "tweetsonar"
+name := "tweet-reflector"
 
 version := "0.1"
 
@@ -22,9 +22,9 @@ libraryDependencies ++= Seq(
   "com.google.guava"	% "guava" % "r06",				// CDH3u5
   "log4j"               % "log4j" % "1.2.17",				// CDH3u5
   "org.atilika.kuromoji" % "kuromoji" % "0.7.7",			// Kuromoji
-  "org.twitter4j"	% "twitter4j-core" % "2.2.5",	// 
-  "org.twitter4j"	% "twitter4j-stream" % "2.2.5",	//
-  "com.basho.riak"      % "riak-client" % "1.1.0"	// Riak 
+  "org.twitter4j"	% "twitter4j-core" % "3.0.3",	// 
+  "org.twitter4j"	% "twitter4j-stream" % "3.0.3",	//
+  "com.basho.riak"      % "riak-client" % "1.1.1"	// Riak 
 )
 
 // retrieveManaged := true
