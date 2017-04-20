@@ -2,7 +2,7 @@ name := "tweet-reflector"
 
 version := "0.1"
 
-scalaVersion := "2.9.2"
+scalaVersion := "2.11.7"
 
 scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation")
 
